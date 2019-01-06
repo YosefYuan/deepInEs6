@@ -8,7 +8,6 @@ function run(taskDef) {
       step();
     }
   }
-
   step()
 }
 
