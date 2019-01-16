@@ -1,41 +1,40 @@
-let fs = require("fs")
+let fs = require('fs');
 
 function run(taskDef) {
     let task = taskDef();
-    console.log('task',task)
-    let result = task.next()
-    console.log('result',result)
+    console.log(task);
 
-    function step() {
+    let result = task.next();
+    console.log(result);
+    
+    (function step() {
         if(!result.done){
-            if(typeof result.value === "function"){
-                result.value(function (err, data) {
-                    if(err){
-                        result = task.throw(err);
-                        return;
-                    }
-                    result = task.next(data);
-                    step()
-                })
-            }else{
-                result = task.next(result.value)
+            let promise = Promise.resolve(result.value)
+            promise.then(function (value) {
+                result = task.next(value)
                 step()
-            }
+            }).catch(function (error) {
+                result = task.throw(error)
+                step()
+            })
         }
-    }
-
-    step()
+    }())
 }
 
 function readFile(filename) {
-    return function (callback) {
-        fs.readFile(filename,callback)
-    }
+    return new Promise(function (resolve,reject) {
+        fs.readFile(filename,function (err, contents) {
+            if(err){
+                reject(err)
+            }else{
+                resolve(contents)
+            }
+        })
+    })
 }
 
 run(function *() {
-    let contents = yield readFile("example.txt");
-//    dosomethingWith(contents)
-    console.log(contents)
+    let contents = yield readFile("example.txt")
+
     console.log("done")
 })
